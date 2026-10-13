@@ -73,6 +73,11 @@ AppImage، نه با `./scripts/run-gui.sh`) دیسپلی را حفظ کن:
 sudo -E --preserve-env=DISPLAY,XAUTHORITY ./tbgui-v1.0.0-x86_64.AppImage
 ```
 
+فایل‌های ریلیز (تاربال + AppImage + زیپ ویندوز، همه همراه openvpn) روی خود
+گیت‌هاب ساخته می‌شوند: پوش تگ مثل `v1.1.0` فایل‌های لینوکس را با ورک‌فلو
+`linux-release` می‌سازد و ورک‌فلو `windows-release` زیپ ویندوز را.
+هیچ‌چیز دستی آپلود نمی‌شود.
+
 ---
 
 ## اجرا

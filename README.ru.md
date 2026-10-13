@@ -84,6 +84,11 @@
 sudo -E --preserve-env=DISPLAY,XAUTHORITY ./tbgui-v1.0.0-x86_64.AppImage
 ```
 
+Файлы релиза (tar.gz + AppImage + Windows-zip, все с openvpn) собираются
+самим GitHub: пуш тега вроде `v1.1.0` собирает Linux через workflow
+`linux-release`, а workflow `windows-release` — zip для Windows. Вручную
+ничего не загружается.
+
 ---
 
 ## Windows

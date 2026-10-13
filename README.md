@@ -74,6 +74,11 @@ AppImage, not via `./scripts/run-gui.sh`), keep your display:
 sudo -E --preserve-env=DISPLAY,XAUTHORITY ./tbgui-v1.0.0-x86_64.AppImage
 ```
 
+Release files (tarball + AppImage + Windows zip, all with openvpn) are
+compiled on GitHub itself: pushing a tag like `v1.1.0` builds the Linux
+files via the `linux-release` workflow, and the `windows-release`
+workflow builds the Windows zip. Nothing is ever uploaded by hand.
+
 ---
 
 ## Run
