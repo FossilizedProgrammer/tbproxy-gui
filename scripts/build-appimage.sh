@@ -6,9 +6,17 @@
 #   appimagetool (auto-downloaded if missing).
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# Layout detection: monorepo (gui/scripts/) vs standalone repo (scripts/).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "$SCRIPT_DIR" in
+  */gui/scripts)
+    REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)" ;;  # monorepo
+  *)
+    REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)" ;;     # standalone repo
+esac
+if [[ -d "$REPO_ROOT/gui" ]]; then GUI_SRC="$REPO_ROOT/gui"; else GUI_SRC="$REPO_ROOT"; fi
 VERSION="${1:-${VERSION:-v1.0.0}}"
-BUNDLE="$REPO_ROOT/gui/build/linux/x64/release/bundle"
+BUNDLE="$GUI_SRC/build/linux/x64/release/bundle"
 APPDIR="$REPO_ROOT/dist/AppDir"
 APPIMAGE="$REPO_ROOT/dist/tbgui-${VERSION}-x86_64.AppImage"
 
@@ -17,7 +25,7 @@ log() { printf '[appimage] %s\n' "$*"; }
 # 1) make sure the bundle exists (this also bundles tbproxy + openvpn)
 if [[ ! -x "$BUNDLE/tbgui" || ! -f "$BUNDLE/tbproxy" ]]; then
   log "Bundle incomplete — running build-gui.sh first ..."
-  "$REPO_ROOT/gui/scripts/build-gui.sh"
+  "$GUI_SRC/scripts/build-gui.sh"
 fi
 [[ -x "$BUNDLE/tbgui" ]] || { echo "no tbgui binary" >&2; exit 1; }
 [[ -f "$BUNDLE/tbproxy" ]] || { echo "no tbproxy in bundle" >&2; exit 1; }
@@ -91,4 +99,4 @@ chmod +x "$APPIMAGE"
 log "Done: $APPIMAGE ($(du -h "$APPIMAGE" | cut -f1))"
 log "Contents (bin): $(ls "$APPDIR/usr/bin" | tr '\n' ' ')"
 log "Run with: sudo -E --preserve-env=DISPLAY,XAUTHORITY $APPIMAGE  (root needed for tun)"
-log "  or via the helper: ./gui/scripts/run-gui.sh (runs the bundle, not the AppImage)"
+log "  or via the helper: $GUI_SRC/scripts/run-gui.sh (runs the bundle, not the AppImage)"

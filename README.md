@@ -25,7 +25,7 @@ Unofficial TunnelBear client for Linux, as a desktop window (Flutter).
 ## What is this?
 
 A small desktop app that drives the same `tbproxy` CLI (see
-[cli/README.md](../cli/README.md)) — no terminal needed:
+[tbproxy-cli](https://github.com/FossilizedProgrammer/tbproxy-cli)) — no terminal needed:
 
 - Country dropdown, big **Connect / Disconnect / Check-login** buttons
 - Saved email + password (stored in `~/.config/tbproxy-gui/`)
@@ -42,27 +42,33 @@ A small desktop app that drives the same `tbproxy` CLI (see
 3. **Flutter** with Linux desktop support — to build the window itself.
 4. **An `openvpn` binary (2.5+)** — e.g. `sudo apt-get install -y openvpn`,
    or build from source; full instructions in
-   [cli/README.md](../cli/README.md).
+   [tbproxy-cli](https://github.com/FossilizedProgrammer/tbproxy-cli).
 
 ---
 
 ## Build
 
-One command builds the CLI, builds the GUI, and puts `tbproxy` next to the
-app so the folder is self-contained:
+One command gets the `tbproxy` CLI (built from source, or the matching
+release downloaded automatically), builds the GUI, and puts `tbproxy` +
+`openvpn` next to the app so the folder is self-contained:
 
 ```bash
-./gui/scripts/build-gui.sh
+./scripts/build-gui.sh
 ```
 
-The result is `gui/build/linux/x64/release/bundle/tbgui`.
+The result is `build/linux/x64/release/bundle/tbgui` (with `tbproxy` and
+`openvpn` alongside it). For a single-file release, bundle it further:
+
+```bash
+./scripts/build-appimage.sh v1.0.0
+```
 
 ---
 
 ## Run
 
 ```bash
-./gui/scripts/run-gui.sh
+./scripts/run-gui.sh
 ```
 
 Root is needed for the tunnel device; the script keeps your display and your

@@ -25,7 +25,7 @@
 ## Что это?
 
 Небольшое десктопное приложение, которое запускает тот же CLI `tbproxy`
-(подробности в [cli/README.ru.md](../cli/README.ru.md)) — без терминала:
+(подробности в [tbproxy-cli](https://github.com/FossilizedProgrammer/tbproxy-cli/blob/main/README.ru.md)) — без терминала:
 
 - Выпадающий список стран, крупные кнопки **Connect / Disconnect / Check-login**
 - Сохранённые email и пароль (в `~/.config/tbproxy-gui/`)
@@ -42,27 +42,48 @@
 3. **Flutter** с поддержкой Linux desktop — чтобы собрать само окно.
 4. **Бинарник `openvpn` (2.5+)** — например `sudo apt-get install -y openvpn`
    или сборка из исходников; полная инструкция в
-   [cli/README.ru.md](../cli/README.ru.md).
+   [tbproxy-cli](https://github.com/FossilizedProgrammer/tbproxy-cli/blob/main/README.ru.md).
 
 ---
 
 ## Сборка
 
-Одна команда собирает CLI, собирает GUI и кладёт `tbproxy` рядом с приложением,
-чтобы папка была самодостаточной:
+Одна команда готовит CLI `tbproxy` (собирает из исходников или сам
+скачивает совпадающий релиз), собирает GUI и кладёт `tbproxy` и `openvpn`
+рядом с приложением, чтобы папка была самодостаточной:
 
 ```bash
-./gui/scripts/build-gui.sh
+./scripts/build-gui.sh
 ```
 
-Результат: `gui/build/linux/x64/release/bundle/tbgui`
+Результат: `build/linux/x64/release/bundle/tbgui` (рядом — `tbproxy` и
+`openvpn`). Для однофайлового релиза:
+
+```bash
+./scripts/build-appimage.sh v1.0.0
+```
 
 ---
 
 ## Запуск
 
 ```bash
-./gui/scripts/run-gui.sh
+./scripts/run-gui.sh
+```
+
+Результат: `build/linux/x64/release/bundle/tbgui` (рядом — `tbproxy` и
+`openvpn`). Для однофайлового релиза:
+
+```bash
+./scripts/build-appimage.sh v1.0.0
+```
+
+---
+
+## Запуск
+
+```bash
+./scripts/run-gui.sh
 ```
 
 Для устройства tun нужен root; скрипт сохраняет ваш дисплей и настройки

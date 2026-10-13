@@ -24,7 +24,7 @@
 ## این چیست؟
 
 یک اپ کوچک دسکتاپ که همان CLI یعنی `tbproxy` را اجرا می‌کند (توضیحات کامل در
-[cli/README.fa.md](../cli/README.fa.md)) — بدون ترمینال:
+[tbproxy-cli](https://github.com/FossilizedProgrammer/tbproxy-cli/blob/main/README.fa.md)) — بدون ترمینال:
 
 - دراپ‌داون کشور، دکمه‌های بزرگ **Connect / Disconnect / Check-login**
 - ذخیره‌ی ایمیل و رمز عبور (در `~/.config/tbproxy-gui/`)
@@ -41,27 +41,33 @@
 3. **فلاتر** با پشتیبانی Linux desktop — برای ساخت خود پنجره.
 4. **باینری `openvpn` (نسخه ۲.۵ به بالا)** — مثلاً
    `sudo apt-get install -y openvpn` یا ساخت از روی سورس؛ راهنمای کامل در
-   [cli/README.fa.md](../cli/README.fa.md).
+   [tbproxy-cli](https://github.com/FossilizedProgrammer/tbproxy-cli/blob/main/README.fa.md).
 
 ---
 
 ## ساخت
 
-یک دستور هم CLI را می‌سازد، هم GUI را، و `tbproxy` را کنار اپ می‌گذارد تا
-پوشه خودکفا باشد:
+یک دستور CLI یعنی `tbproxy` را آماده می‌کند (از روی سورس می‌سازد یا
+ریلیز هم‌نسخه را خودکار دانلود می‌کند)، GUI را می‌سازد و `tbproxy` و
+`openvpn` را کنار اپ می‌گذارد تا پوشه خودکفا باشد:
 
 ```bash
-./gui/scripts/build-gui.sh
+./scripts/build-gui.sh
 ```
 
-خروجی: `gui/build/linux/x64/release/bundle/tbgui`
+خروجی: `build/linux/x64/release/bundle/tbgui` (با `tbproxy` و `openvpn`
+کنارش). برای ریلیز تک‌فایل:
+
+```bash
+./scripts/build-appimage.sh v1.0.0
+```
 
 ---
 
 ## اجرا
 
 ```bash
-./gui/scripts/run-gui.sh
+./scripts/run-gui.sh
 ```
 
 برای دستگاه tun به root نیاز است؛ اسکریپت دیسپلی و تنظیمات خودت
