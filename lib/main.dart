@@ -172,7 +172,7 @@ class _HomePageState extends State<HomePage> {
     _add('tbproxy: $bin');
     if (!_root) {
       _add('warning: not running as root — the tun device needs it. '
-          'Start the GUI with ./gui/scripts/run-gui.sh');
+          'Relaunch as root: ${TbProxy.rootHint()}');
       // Visible, modal message — the log line alone is easy to miss.
       WidgetsBinding.instance.addPostFrameCallback((_) => _showRootDialog());
     }
@@ -229,30 +229,30 @@ class _HomePageState extends State<HomePage> {
   /// visibly, instead of letting the connection fail halfway.
   Future<void> _showRootDialog() async {
     if (!mounted) return;
-    const cmd = './gui/scripts/run-gui.sh';
+    final cmd = TbProxy.rootHint();
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Root required'),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('tbproxy needs root to create the VPN tunnel device (tun). '
+            const Text('tbproxy needs root to create the VPN tunnel device (tun). '
                 'Without it the connection cannot be established.'),
-            SizedBox(height: 12),
-            Text('Start the GUI with:'),
-            SizedBox(height: 6),
+            const SizedBox(height: 12),
+            const Text('Relaunch as root with:'),
+            const SizedBox(height: 6),
             SelectableText(
               cmd,
-              style: TextStyle(fontFamily: 'monospace', fontSize: 13),
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () {
-              Clipboard.setData(const ClipboardData(text: cmd));
+              Clipboard.setData(ClipboardData(text: cmd));
               Navigator.of(ctx).pop();
             },
             child: const Text('copy command'),
@@ -281,8 +281,8 @@ class _HomePageState extends State<HomePage> {
   Future<void> _connect() async {
     if (_running || _busy) return;
     if (!_root) {
-      _add('error: not running as root — start the GUI with '
-          './gui/scripts/run-gui.sh');
+      _add('error: not running as root — relaunch as root: '
+          '${TbProxy.rootHint()}');
       await _showRootDialog();
       return;
     }

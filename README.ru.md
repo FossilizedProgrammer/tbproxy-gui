@@ -57,25 +57,13 @@
 ```
 
 Результат: `build/linux/x64/release/bundle/tbgui` (рядом — `tbproxy` и
-`openvpn`). Для однофайлового релиза:
+`openvpn`). Для файлов релиза (tar.gz с папкой + однофайловый AppImage,
+в обоих — `tbgui`, `tbproxy` и `openvpn`):
 
 ```bash
-./scripts/build-appimage.sh v1.0.0
-```
-
----
-
-## Запуск
-
-```bash
-./scripts/run-gui.sh
-```
-
-Результат: `build/linux/x64/release/bundle/tbgui` (рядом — `tbproxy` и
-`openvpn`). Для однофайлового релиза:
-
-```bash
-./scripts/build-appimage.sh v1.0.0
+./scripts/build-release.sh v1.0.0
+# dist/tbgui-v1.0.0-linux-x86_64.tar.gz   (обычная папка; запуск ./tbgui/tbgui от root — см. ниже)
+# dist/tbgui-v1.0.0-x86_64.AppImage       (один файл, нужен FUSE)
 ```
 
 ---
@@ -88,6 +76,8 @@
 
 Для устройства tun нужен root; скрипт сохраняет ваш дисплей и настройки
 (`~/.config/tbproxy-gui/`), поэтому окно появляется как обычно.
+При ручном запуске (tar.gz или AppImage, а не через `./scripts/run-gui.sh`)
+сохраните дисплей сами:
 
 ---
 

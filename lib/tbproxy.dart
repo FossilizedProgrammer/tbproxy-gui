@@ -5,10 +5,13 @@ import 'settings.dart';
 /// Everything the GUI needs to know about the `tbproxy` command line tool.
 class TbProxy {
   /// Names searched in every ancestor directory (exe dir, CWD) until the
-  /// binary is found: the repo checkout, the app bundle, then $PATH.
+  /// binary is found: the app bundle, the repo checkout (standalone or
+  /// monorepo with a sibling cli/), then $PATH.
   static const _names = <String>[
     'tbproxy',
     'tbproxy.exe',
+    'cli/tbproxy',
+    'cli/tbproxy.exe',
     'dist/tbproxy-linux-amd64',
     'dist/tbproxy-linux-arm64',
   ];
@@ -68,6 +71,27 @@ class TbProxy {
     } catch (_) {
       return false;
     }
+  }
+
+  /// How to relaunch the GUI as root, adapted to how it is running now:
+  /// inside an AppImage a helper-script path would be meaningless, so the
+  /// command re-runs the same .AppImage file; otherwise the run-gui.sh
+  /// helper is used when found, else a plain sudo invocation of this binary.
+  static String rootHint() {
+    const sudoEnv = 'sudo -E --preserve-env=DISPLAY,XAUTHORITY';
+    final appImage = Platform.environment['APPIMAGE'];
+    if (appImage != null && appImage.isNotEmpty) return '$sudoEnv $appImage';
+    var dir = Directory(File(Platform.resolvedExecutable).parent.path);
+    for (var i = 0; i < 8; i++) {
+      for (final cand in ['scripts/run-gui.sh', 'gui/scripts/run-gui.sh']) {
+        final f = File('${dir.path}/$cand');
+        if (f.existsSync()) return f.path;
+      }
+      final parent = dir.parent;
+      if (parent.path == dir.path) break;
+      dir = parent;
+    }
+    return '$sudoEnv ${File(Platform.resolvedExecutable).path}';
   }
 
   /// `tbproxy` arguments for the Connect button.

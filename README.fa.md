@@ -56,10 +56,20 @@
 ```
 
 خروجی: `build/linux/x64/release/bundle/tbgui` (با `tbproxy` و `openvpn`
-کنارش). برای ریلیز تک‌فایل:
+کنارش). برای فایل‌های ریلیز (تاربال پوشه + AppImage تک‌فایل، هر دو شامل
+`tbgui` و `tbproxy` و `openvpn`):
 
 ```bash
-./scripts/build-appimage.sh v1.0.0
+./scripts/build-release.sh v1.0.0
+# dist/tbgui-v1.0.0-linux-x86_64.tar.gz   (پوشه ساده؛ اجرای ./tbgui/tbgui با روت، پایین را ببین)
+# dist/tbgui-v1.0.0-x86_64.AppImage       (تک‌فایل، نیاز به FUSE)
+```
+
+برای دستگاه tun به root نیاز است؛ وقتی دستی اجرا می‌کنی (تاربال یا
+AppImage، نه با `./scripts/run-gui.sh`) دیسپلی را حفظ کن:
+
+```bash
+sudo -E --preserve-env=DISPLAY,XAUTHORITY ./tbgui-v1.0.0-x86_64.AppImage
 ```
 
 ---

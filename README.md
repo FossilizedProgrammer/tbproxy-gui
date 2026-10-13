@@ -57,10 +57,20 @@ release downloaded automatically), builds the GUI, and puts `tbproxy` +
 ```
 
 The result is `build/linux/x64/release/bundle/tbgui` (with `tbproxy` and
-`openvpn` alongside it). For a single-file release, bundle it further:
+`openvpn` alongside it). For release files (folder tarball + single-file
+AppImage, both containing `tbgui` + `tbproxy` + `openvpn`):
 
 ```bash
-./scripts/build-appimage.sh v1.0.0
+./scripts/build-release.sh v1.0.0
+# dist/tbgui-v1.0.0-linux-x86_64.tar.gz   (plain folder; run ./tbgui/tbgui as root, see below)
+# dist/tbgui-v1.0.0-x86_64.AppImage       (single file, needs FUSE)
+```
+
+Root is needed for the tunnel device; when launching by hand (tarball or
+AppImage, not via `./scripts/run-gui.sh`), keep your display:
+
+```bash
+sudo -E --preserve-env=DISPLAY,XAUTHORITY ./tbgui-v1.0.0-x86_64.AppImage
 ```
 
 ---
