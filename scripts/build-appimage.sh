@@ -76,11 +76,13 @@ exec "$HERE/usr/bin/tbgui" "$@"
 APPRUN
 chmod +x "$APPDIR/AppRun"
 
-# 3) get appimagetool
-APPIMAGETOOL=""
-if command -v appimagetool >/dev/null 2>&1; then
+# 3) get appimagetool (APPIMAGETOOL env wins — on CI without FUSE point it
+# at an extracted AppRun, e.g. squashfs-root/AppRun from --appimage-extract)
+APPIMAGETOOL="${APPIMAGETOOL:-}"
+if [[ -z "$APPIMAGETOOL" ]] && command -v appimagetool >/dev/null 2>&1; then
   APPIMAGETOOL="appimagetool"
-else
+fi
+if [[ -z "$APPIMAGETOOL" ]]; then
   mkdir -p "$REPO_ROOT/dist"
   if [[ ! -x "$REPO_ROOT/dist/appimagetool-x86_64.AppImage" ]]; then
     log "Downloading appimagetool ..."

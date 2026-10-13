@@ -1,0 +1,169 @@
+# Builds the Linux GUI release ENTIRELY from source on GitHub runners and
+# attaches the files to the release — nothing is uploaded by hand.
+#
+# Triggers:
+#   - push a tag like v1.1.0 (builds that tag; creates the release if missing)
+#   - Actions tab -> Run workflow (rebuild any existing tag; replaces assets)
+#
+# The bundled tbproxy is compiled from the tbproxy-cli repo at the SAME tag;
+# if that tag does not exist there yet (CLI unchanged), cli_version falls
+# back to the given CLI release — so tag the CLI first when it changed.
+# openvpn is always compiled here from source. Produces:
+#   tbgui-<ver>-linux-x86_64.tar.gz   (tbgui + tbproxy + openvpn folder)
+#   tbgui-<ver>-x86_64.AppImage       (single-file, self-contained)
+name: linux-release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Tag to (re)build, e.g. v1.1.0 (tag must exist)'
+        required: true
+        default: 'v1.1.0'
+      cli_version:
+        description: 'tbproxy-cli tag to compile tbproxy from (fallback if same tag missing there)'
+        required: true
+        default: 'v1.0.0'
+      openvpn_version:
+        description: 'OpenVPN source version to compile'
+        required: true
+        default: '2.7.8'
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Resolve versions
+        id: v
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "ver=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+            echo "want_cli=${{ inputs.cli_version }}" >> "$GITHUB_OUTPUT"
+            echo "ovpn=${{ inputs.openvpn_version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ver=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            echo "want_cli=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            echo "ovpn=2.7.8" >> "$GITHUB_OUTPUT"
+          fi
+          {
+            echo "fallback_cli=v1.0.0"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.version) || '' }}
+
+      - name: Pick tbproxy-cli source (same tag, else fallback release tag)
+        id: cli
+        run: |
+          WANT="${{ steps.v.outputs.want_cli }}"
+          FALLBACK="${{ steps.v.outputs.fallback_cli }}"
+          if git ls-remote --exit-code --tags \
+              https://github.com/FossilizedProgrammer/tbproxy-cli.git \
+              "refs/tags/$WANT" >/dev/null 2>&1; then
+            echo "ref=refs/tags/$WANT" >> "$GITHUB_OUTPUT"
+            echo "Picked tbproxy-cli tag $WANT"
+          else
+            echo "ref=refs/tags/$FALLBACK" >> "$GITHUB_OUTPUT"
+            echo "No tbproxy-cli tag $WANT — falling back to $FALLBACK"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          repository: FossilizedProgrammer/tbproxy-cli
+          ref: ${{ steps.cli.outputs.ref }}
+          path: .cli-src
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: .cli-src/go.mod
+
+      - name: Compile tbproxy from source
+        run: |
+          cd .cli-src && go build -o tbproxy . && ./tbproxy -list-countries | head -n 2
+          echo "TBPROXY_BIN=$PWD/tbproxy" >> "$GITHUB_ENV"
+
+      - name: Build openvpn from source
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libssl-dev \
+            liblzo2-dev liblz4-dev libcap-ng-dev libsystemd-dev
+          curl -fL -o "openvpn-${{ steps.v.outputs.ovpn }}.tar.gz" \
+            "https://swupdate.openvpn.org/community/releases/openvpn-${{ steps.v.outputs.ovpn }}.tar.gz"
+          tar xzf "openvpn-${{ steps.v.outputs.ovpn }}.tar.gz"
+          cd openvpn-*/
+          ./configure
+          make -j"$(nproc)"
+          ./src/openvpn/openvpn --version
+          cp src/openvpn/openvpn ../openvpn
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install Flutter linux build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev
+          flutter config --enable-linux-desktop
+
+      - name: Build GUI bundle (tbproxy + openvpn alongside)
+        run: |
+          ./scripts/build-gui.sh
+          ls build/linux/x64/release/bundle/
+
+      - name: Prepare appimagetool (no FUSE on runners — use extracted AppRun)
+        uses: actions/cache@v4
+        with:
+          path: dist/atools
+          key: appimagetool-continuous
+
+      - name: Extract appimagetool
+        run: |
+          mkdir -p dist/atools
+          if [[ ! -x dist/atools/squashfs-root/AppRun ]]; then
+            curl -fL -o dist/atools/appimagetool-x86_64.AppImage \
+              "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+            chmod +x dist/atools/appimagetool-x86_64.AppImage
+            (cd dist/atools && ./appimagetool-x86_64.AppImage --appimage-extract >/dev/null)
+          fi
+          echo "APPIMAGETOOL=$PWD/dist/atools/squashfs-root/AppRun" >> "$GITHUB_ENV"
+
+      - name: Build AppImage + tarball
+        run: |
+          ./scripts/build-appimage.sh "${{ steps.v.outputs.ver }}"
+          VER="${{ steps.v.outputs.ver }}"
+          rm -rf dist/tbgui-pkg && mkdir -p dist/tbgui-pkg/tbgui
+          cp -a build/linux/x64/release/bundle/. dist/tbgui-pkg/tbgui/
+          tar -czf "dist/tbgui-$VER-linux-x86_64.tar.gz" -C dist/tbgui-pkg tbgui
+          rm -rf dist/tbgui-pkg
+          tar tzf "dist/tbgui-$VER-linux-x86_64.tar.gz" | head -n 6
+
+      - name: Attach to release (create it if missing)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VER="${{ steps.v.outputs.ver }}"
+          cat > notes.txt <<'EOF'
+          Unofficial community client for TunnelBear (desktop GUI, Flutter). Not affiliated with, endorsed, reviewed, or supervised by TunnelBear/McAfee — personal use only.
+
+          Optimized for Iran filtering: inside Iran it does NOT work without an upstream proxy (fill in the upstream section or let auto-detect pick up 127.0.0.1:1080/8080, and keep it running for the whole session). Only useful when a site/app has a problem with your current IP — then use this client over your upstream to get a cleaner IP.
+
+          Linux x86-64 (each contains tbgui + tbproxy + openvpn; everything compiled here on GitHub):
+          - tbgui-<ver>-x86_64.AppImage — single file, needs FUSE. Run as root keeping your display: sudo -E --preserve-env=DISPLAY,XAUTHORITY ./tbgui-*.AppImage
+          - tbgui-<ver>-linux-x86_64.tar.gz — plain folder for systems without FUSE. Extract and run ./tbgui/tbgui as root the same way.
+
+          Windows x86-64 (proxy-only mode, built by the windows-release workflow):
+          - tbgui-<ver>-windows-x86_64.zip — tbgui.exe + tbproxy.exe + openvpn.exe. Run tbgui.exe as administrator.
+          EOF
+          gh release view "$VER" --json url >/dev/null 2>&1 \
+            || gh release create "$VER" --title "$VER" --notes-file notes.txt
+          gh release upload "$VER" \
+            "dist/tbgui-$VER-linux-x86_64.tar.gz" \
+            "dist/tbgui-$VER-x86_64.AppImage" --clobber
