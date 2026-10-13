@@ -1,0 +1,71 @@
+# Builds the Windows GUI on a real Windows runner (Flutter desktop builds
+# need Windows; they cannot be cross-compiled from Linux) and attaches the
+# zip to the existing release tag.
+#
+# Run it from the repo's Actions tab: "windows-release" -> Run workflow ->
+# version (e.g. v1.0.0). The tag must already exist (create the release
+# first); the matching tbproxy-cli Windows zip is downloaded automatically.
+name: windows-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release tag, e.g. v1.0.0 (release must exist)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Fetch matching CLI release (tbproxy.exe + openvpn.exe)
+        run: |
+          $ver = "${{ inputs.version }}"
+          $url = "https://github.com/FossilizedProgrammer/tbproxy-cli/releases/download/$ver/tbproxy-$ver-windows-amd64.zip"
+          New-Item -ItemType Directory -Force -Path .vendor | Out-Null
+          Invoke-WebRequest -Uri $url -OutFile "$env:RUNNER_TEMP\cli.zip"
+          Expand-Archive -Path "$env:RUNNER_TEMP\cli.zip" -DestinationPath .vendor -Force
+          Get-ChildItem .vendor
+
+      - name: Ensure Windows scaffold
+        run: |
+          if (!(Test-Path windows)) { flutter create --platforms=windows . }
+
+      - run: flutter config --enable-windows-desktop
+      - run: flutter build windows --release
+
+      - name: Bundle CLI + openvpn next to the app
+        run: |
+          $rel = "build\windows\x64\runner\Release"
+          if (!(Test-Path "$rel\tbgui.exe")) { throw "tbgui.exe missing in $rel" }
+          Copy-Item .vendor\tbproxy-windows-amd64.exe "$rel\tbproxy.exe" -Force
+          Copy-Item .vendor\openvpn.exe "$rel\openvpn.exe" -Force
+          Get-ChildItem $rel
+
+      - name: Pack zip
+        run: |
+          $ver = "${{ inputs.version }}"
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          $zip = "dist\tbgui-$ver-windows-x86_64.zip"
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath $zip
+
+      - name: Attach zip to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ver = "${{ inputs.version }}"
+          gh release upload $ver "dist\tbgui-$ver-windows-x86_64.zip" --clobber

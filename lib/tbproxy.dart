@@ -39,7 +39,8 @@ class TbProxy {
     }
 
     // Last resort: whatever `PATH` has (no window helper — try running it).
-    for (final dir in (Platform.environment['PATH'] ?? '').split(':')) {
+    final sep = Platform.isWindows ? ';' : ':';
+    for (final dir in (Platform.environment['PATH'] ?? '').split(sep)) {
       if (dir.isEmpty) continue;
       for (final name in _names.take(2)) {
         final p = '$dir/$name';
@@ -63,9 +64,15 @@ class TbProxy {
         .toList();
   }
 
-  /// True when the process may create the tun device.
+  /// True when the process may create the tun device: uid 0 on Unix,
+  /// an elevated (administrator) token on Windows (`net session` only
+  /// succeeds elevated).
   static Future<bool> isRoot() async {
     try {
+      if (Platform.isWindows) {
+        final r = await Process.run('net', ['session']);
+        return r.exitCode == 0;
+      }
       final r = await Process.run('id', ['-u']);
       return (r.stdout as String).trim() == '0';
     } catch (_) {
@@ -73,11 +80,20 @@ class TbProxy {
     }
   }
 
-  /// How to relaunch the GUI as root, adapted to how it is running now:
-  /// inside an AppImage a helper-script path would be meaningless, so the
-  /// command re-runs the same .AppImage file; otherwise the run-gui.sh
-  /// helper is used when found, else a plain sudo invocation of this binary.
+  /// "root" on Unix, "administrator" on Windows — for user-facing messages.
+  static String elevatedName() =>
+      Platform.isWindows ? 'administrator' : 'root';
+
+  /// How to relaunch the GUI elevated, adapted to how it is running now:
+  /// on Windows it must run as administrator; inside an AppImage a
+  /// helper-script path would be meaningless, so the command re-runs the
+  /// same .AppImage file; otherwise the run-gui.sh helper is used when
+  /// found, else a plain sudo invocation of this binary.
   static String rootHint() {
+    final exe = File(Platform.resolvedExecutable).path;
+    if (Platform.isWindows) {
+      return 'Right-click "$exe" -> "Run as administrator"';
+    }
     const sudoEnv = 'sudo -E --preserve-env=DISPLAY,XAUTHORITY';
     final appImage = Platform.environment['APPIMAGE'];
     if (appImage != null && appImage.isNotEmpty) return '$sudoEnv $appImage';
@@ -91,7 +107,7 @@ class TbProxy {
       if (parent.path == dir.path) break;
       dir = parent;
     }
-    return '$sudoEnv ${File(Platform.resolvedExecutable).path}';
+    return '$sudoEnv $exe';
   }
 
   /// `tbproxy` arguments for the Connect button.

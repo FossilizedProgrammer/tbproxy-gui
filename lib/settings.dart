@@ -70,8 +70,15 @@ class Settings {
     return '$n';
   }
 
-  /// ~/.config/tbproxy-gui/config.json (XDG aware).
+  /// Config file location: %APPDATA% on Windows,
+  /// ~/.config (XDG aware) everywhere else.
   static String configPath() {
+    if (Platform.isWindows) {
+      final appData = Platform.environment['APPDATA'];
+      final base =
+          (appData != null && appData.isNotEmpty) ? appData : '.';
+      return '$base\\tbproxy-gui\\config.json';
+    }
     final xdg = Platform.environment['XDG_CONFIG_HOME'];
     final base = (xdg != null && xdg.isNotEmpty)
         ? xdg

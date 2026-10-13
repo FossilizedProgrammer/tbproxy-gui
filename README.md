@@ -37,7 +37,8 @@ A small desktop app that drives the same `tbproxy` CLI (see
 
 ## What you need
 
-1. **Linux with root** (the tunnel device needs it).
+1. **Linux with root** (the tunnel device needs it) — or Windows 10/11
+   with administrator rights (see [Windows](#windows) below).
 2. **Go 1.24+** — to build the `tbproxy` CLI that the GUI runs.
 3. **Flutter** with Linux desktop support — to build the window itself.
 4. **An `openvpn` binary (2.5+)** — e.g. `sudo apt-get install -y openvpn`,
@@ -83,6 +84,22 @@ sudo -E --preserve-env=DISPLAY,XAUTHORITY ./tbgui-v1.0.0-x86_64.AppImage
 
 Root is needed for the tunnel device; the script keeps your display and your
 own settings (`~/.config/tbproxy-gui/`), so the window appears normally.
+
+---
+
+## Windows
+
+The GUI also runs on Windows (proxy-only mode): extract
+`tbgui-<ver>-windows-x86_64.zip` from the release (`tbgui.exe` +
+`tbproxy.exe` + `openvpn.exe`) and run `tbgui.exe` **as administrator**
+(right-click → Run as administrator) — the tun device needs it, and the
+app tells you so if you forget. Windows builds require a Windows machine
+with Flutter (desktop builds can't be cross-compiled from Linux): either
+run `.\scripts\build-windows.ps1 -Version v1.0.0` there, or press “Run
+workflow” on the `windows-release` action — it downloads the matching
+tbproxy-cli Windows zip and attaches the GUI zip to the release for you.
+First-time note: Windows may need the OpenVPN network-adapter driver
+(install the official OpenVPN package once) before the tunnel can come up.
 
 ---
 

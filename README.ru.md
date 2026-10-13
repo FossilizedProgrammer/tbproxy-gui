@@ -37,7 +37,8 @@
 
 ## Что понадобится
 
-1. **Linux с root** (нужен для создания устройства tun).
+1. **Linux с root** (нужен для создания устройства tun) — или Windows
+   10/11 с правами администратора (см. [Windows](#windows) ниже).
 2. **Go 1.24+** — чтобы собрать CLI, который запускает GUI.
 3. **Flutter** с поддержкой Linux desktop — чтобы собрать само окно.
 4. **Бинарник `openvpn` (2.5+)** — например `sudo apt-get install -y openvpn`
@@ -78,6 +79,26 @@
 (`~/.config/tbproxy-gui/`), поэтому окно появляется как обычно.
 При ручном запуске (tar.gz или AppImage, а не через `./scripts/run-gui.sh`)
 сохраните дисплей сами:
+
+```bash
+sudo -E --preserve-env=DISPLAY,XAUTHORITY ./tbgui-v1.0.0-x86_64.AppImage
+```
+
+---
+
+## Windows
+
+GUI работает и на Windows (только режим прокси): распакуйте
+`tbgui-<ver>-windows-x86_64.zip` из релиза (`tbgui.exe` + `tbproxy.exe` +
+`openvpn.exe`) и запустите `tbgui.exe` **от имени администратора**
+(правый клик → Run as administrator) — устройству tun это нужно, и
+программа сама напомнит, если забудете. Сборка под Windows требует машину
+с Windows и Flutter (десктоп нельзя скросс-компилировать из Linux): либо
+запустите там `.\scripts\build-windows.ps1 -Version v1.0.0`, либо нажмите
+Run workflow у экшена `windows-release` — он сам скачает совпадающий
+Windows-zip tbproxy-cli и прикрепит zip GUI к релизу. На первый раз:
+Windows может потребовать драйвер сетевого адаптера OpenVPN (установите
+официальный пакет OpenVPN один раз), иначе туннель не поднимется.
 
 ---
 

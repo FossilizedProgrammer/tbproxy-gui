@@ -171,8 +171,9 @@ class _HomePageState extends State<HomePage> {
     _cli = bin;
     _add('tbproxy: $bin');
     if (!_root) {
-      _add('warning: not running as root — the tun device needs it. '
-          'Relaunch as root: ${TbProxy.rootHint()}');
+      final what = TbProxy.elevatedName();
+      _add('warning: not running as $what — the tun device needs it. '
+          'Relaunch as $what: ${TbProxy.rootHint()}');
       // Visible, modal message — the log line alone is easy to miss.
       WidgetsBinding.instance.addPostFrameCallback((_) => _showRootDialog());
     }
@@ -230,18 +231,19 @@ class _HomePageState extends State<HomePage> {
   Future<void> _showRootDialog() async {
     if (!mounted) return;
     final cmd = TbProxy.rootHint();
+    final what = TbProxy.elevatedName();
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Root required'),
+        title: Text('${what[0].toUpperCase()}${what.substring(1)} required'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('tbproxy needs root to create the VPN tunnel device (tun). '
+            Text('tbproxy needs $what to create the VPN tunnel device (tun). '
                 'Without it the connection cannot be established.'),
             const SizedBox(height: 12),
-            const Text('Relaunch as root with:'),
+            Text('Relaunch as $what with:'),
             const SizedBox(height: 6),
             SelectableText(
               cmd,
@@ -281,7 +283,8 @@ class _HomePageState extends State<HomePage> {
   Future<void> _connect() async {
     if (_running || _busy) return;
     if (!_root) {
-      _add('error: not running as root — relaunch as root: '
+      final what = TbProxy.elevatedName();
+      _add('error: not running as $what — relaunch as $what: '
           '${TbProxy.rootHint()}');
       await _showRootDialog();
       return;
