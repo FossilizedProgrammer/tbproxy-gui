@@ -42,15 +42,27 @@ cp -a "$BUNDLE/." "$APPDIR/usr/bin/"
 chmod +x "$APPDIR/usr/bin/tbgui" "$APPDIR/usr/bin/tbproxy"
 [[ -f "$APPDIR/usr/bin/openvpn" ]] && chmod +x "$APPDIR/usr/bin/openvpn"
 
-# icon (simple bear-ish placeholder SVG; replace with real art anytime)
-cat > "$APPDIR/usr/share/icons/hicolor/256x256/apps/tbgui.svg" <<'SVG'
+# icon: the bear artwork (assets/bear-256.png); falls back to a simple
+# placeholder SVG only if the artwork is missing.
+ICON_SRC="$GUI_SRC/assets/bear-256.png"
+if [[ -f "$ICON_SRC" ]]; then
+  cp "$ICON_SRC" "$APPDIR/usr/share/icons/hicolor/256x256/apps/tbgui.png"
+  log "Icon: $ICON_SRC"
+else
+  log "WARNING: $ICON_SRC missing — using placeholder icon"
+  cat > "$APPDIR/usr/share/icons/hicolor/256x256/apps/tbgui.svg" <<'SVG'
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
 <rect width="256" height="256" rx="48" fill="#2b2b2b"/>
 <text x="128" y="170" font-size="120" text-anchor="middle">🐻</text>
 </svg>
 SVG
-cp "$APPDIR/usr/share/icons/hicolor/256x256/apps/tbgui.svg" "$APPDIR/tbgui.svg"
-cp "$APPDIR/usr/share/icons/hicolor/256x256/apps/tbgui.svg" "$APPDIR/.DirIcon.svg"
+fi
+for f in "$APPDIR"/usr/share/icons/hicolor/256x256/apps/tbgui.*; do
+  base="$(basename "$f")"
+  cp "$f" "$APPDIR/$base"
+done
+# .DirIcon: symlink to the app icon (thumbnailers + appimagetool expect it).
+(cd "$APPDIR" && if [[ -f tbgui.png ]]; then ln -sf tbgui.png .DirIcon; else ln -sf tbgui.svg .DirIcon; fi)
 
 # desktop entry — AppRun launches tbgui; tbproxy/openvpn are found via PATH
 # (AppRun prepends $APPDIR/usr/bin) or via the bundle dir lookup.

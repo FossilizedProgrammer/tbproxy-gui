@@ -3,17 +3,22 @@
 # zip to the existing release tag.
 #
 # Run it from the repo's Actions tab: "windows-release" -> Run workflow ->
-# version (e.g. v1.0.0). The tag must already exist (create the release
-# first); the matching tbproxy-cli Windows zip is downloaded automatically.
+# version (e.g. v1.1.1). The tag must already exist (create the release
+# first); tbproxy.exe + openvpn.exe come from the tbproxy-cli Windows zip
+# of the same version, or the newest CLI release that has one.
 name: windows-release
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release tag, e.g. v1.0.0 (release must exist)'
+        description: 'Release tag, e.g. v1.1.1 (release must exist)'
         required: true
-        default: 'v1.0.0'
+        default: 'v1.1.1'
+      cli_version:
+        description: 'tbproxy-cli tag for tbproxy.exe+openvpn.exe (empty = same version, else newest CLI release)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -31,10 +36,25 @@ jobs:
         with:
           channel: stable
 
-      - name: Fetch matching CLI release (tbproxy.exe + openvpn.exe)
+      - name: Fetch CLI release (tbproxy.exe + openvpn.exe)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $ver = "${{ inputs.version }}"
-          $url = "https://github.com/FossilizedProgrammer/tbproxy-cli/releases/download/$ver/tbproxy-$ver-windows-amd64.zip"
+          $cliVer = "${{ inputs.cli_version }}"
+          if ([string]::IsNullOrWhiteSpace($cliVer)) { $cliVer = $ver }
+          $zipName = "tbproxy-$cliVer-windows-amd64.zip"
+          $hasIt = gh release view $cliVer --repo FossilizedProgrammer/tbproxy-cli --json assets --jq '.assets[].name' 2>$null | Select-String -SimpleMatch $zipName -Quiet
+          if (-not $hasIt) {
+            $cliVer = gh release list --repo FossilizedProgrammer/tbproxy-cli --exclude-drafts --limit 10 --json tagName --jq '.[].tagName' |
+              Where-Object { (gh release view $_ --repo FossilizedProgrammer/tbproxy-cli --json assets --jq '.assets[].name' 2>$null | Select-String -SimpleMatch "tbproxy-$($_)-windows-amd64.zip" -Quiet) } |
+              Select-Object -First 1
+            if ([string]::IsNullOrWhiteSpace($cliVer)) { throw "no tbproxy-cli release with a Windows zip found" }
+            $zipName = "tbproxy-$cliVer-windows-amd64.zip"
+          }
+          Write-Host "Using tbproxy-cli $cliVer ($zipName)"
+          echo "CLIVER=$cliVer" >> $env:GITHUB_ENV
+          $url = "https://github.com/FossilizedProgrammer/tbproxy-cli/releases/download/$cliVer/$zipName"
           New-Item -ItemType Directory -Force -Path .vendor | Out-Null
           Invoke-WebRequest -Uri $url -OutFile "$env:RUNNER_TEMP\cli.zip"
           Expand-Archive -Path "$env:RUNNER_TEMP\cli.zip" -DestinationPath .vendor -Force
