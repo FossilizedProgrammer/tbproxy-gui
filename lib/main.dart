@@ -718,7 +718,11 @@ class _HomePageState extends State<HomePage> {
 
   Widget _header() => Row(
         children: [
-          const Text('🐻', style: TextStyle(fontSize: 34)),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.asset('assets/bear-256.png',
+                width: 40, height: 40, fit: BoxFit.cover),
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
